@@ -6,13 +6,24 @@
         xmlns:local="clr-namespace:SunRise_SunDown"
         mc:Ignorable="d"
         Title="lab Work 4" Height="450" Width="800">
-    <Grid>
+    
+    <Grid x:Name="Main">
         <TabControl>
             <TabItem Header="Прочитати завдання">
-                <TextBox x:Name="Task_Desc" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBox 
+                    x:Name="Task_Desc" 
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    FontSize="20"/>
             </TabItem>
 
             <TabItem Header="Завдання">
+
+                <Canvas x:Name="Canvas">
+                    <Viewbox>
+                        <Polygon Fill="Green"/>
+                    </Viewbox>
+                </Canvas>
+                
             </TabItem>
         </TabControl>
     </Grid>

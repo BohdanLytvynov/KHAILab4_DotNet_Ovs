@@ -3,10 +3,93 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:SunRise_SunDown"
+        xmlns:local="clr-namespace:SunRise_SunDown" 
+        xmlns:system="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
-        Title="lab Work 4" Height="450" Width="800">
-    
+        Title="lab Work 4" Height="450" Width="800"               
+        d:DataContext="{d:DesignInstance local:MainWindow, IsDesignTimeCreatable=True}">
+
+    <Window.Resources>
+
+        <Duration x:Key="AnimDuration">0:0:0:0.02
+        </Duration>
+
+        <system:Double x:Key="SunMockupWidth">70
+        </system:Double>
+
+        <system:Double x:Key="SunMockupHeight">70
+        </system:Double>
+
+        <system:Double x:Key="ControlPanelFontSize">16
+        </system:Double>
+
+        <Style x:Key="VerticalGridSplitter" TargetType="GridSplitter">
+            <Style.Setters>
+                <Setter Property="Background" Value="Black"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="Width" Value="5"/>
+            </Style.Setters>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ColorAnimation
+                                    Storyboard.TargetProperty="Background.Color"
+                                    From="black"
+                                    To="Orange"
+                                    Duration="{StaticResource AnimDuration}"
+                                    />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+
+                    <Trigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ColorAnimation
+                Storyboard.TargetProperty="Background.Color"
+                From="Orange"
+                To="Black"
+                Duration="{StaticResource AnimDuration}"
+                />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.ExitActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SliderStack" TargetType="StackPanel">
+            <Style.Setters>
+                <Setter Property="Orientation" Value="Vertical"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Margin" Value="10,0,0,0"/>
+                <Setter Property="ItemsControl.FontSize" Value="{StaticResource ControlPanelFontSize}"/>
+            </Style.Setters>
+        </Style>
+
+        <Style x:Key="ControllPanelTextBlock" TargetType="TextBlock">
+            <Style.Setters>
+                <Setter Property="TextAlignment" Value="Center"/>
+                <Setter Property="FontSize" Value="{StaticResource ControlPanelFontSize}"/>
+            </Style.Setters>
+        </Style>
+
+        <Style x:Key="Slider" TargetType="Slider">
+            <Style.Setters>
+                <Setter Property="ItemsControl.Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Slider}">
+                            
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style.Setters>
+        </Style>
+    </Window.Resources>
+
     <Grid x:Name="Main">
         <TabControl>
             <TabItem Header="Прочитати завдання">
@@ -18,12 +101,123 @@
 
             <TabItem Header="Завдання">
 
-                <Canvas x:Name="Canvas">
-                    <Viewbox>
-                        <Polygon Fill="Green"/>
-                    </Viewbox>
-                </Canvas>
-                
+                <Grid x:Name="Scene_Grid">
+                    <Canvas x:Name="Canvas" Grid.Row="0" 
+                            Initialized="Canvas_Initialized" 
+                            SizeChanged="Canvas_SizeChanged">
+                        <Polyline x:Name="PolyLineMock"                                  
+                                  Stroke="blue"
+                                  RenderTransformOrigin="0.5, 0.5"
+                                  StrokeDashArray="3,3"
+                                  >
+                        </Polyline>
+
+
+
+                        <Ellipse x:Name="SunMock"
+                                 Canvas.Left="{Binding CentralLowPoint.X, 
+                            Mode=OneWay, 
+                            UpdateSourceTrigger=PropertyChanged}"
+                                 Canvas.Bottom="{Binding ElementName=ZenitControl,
+                            Path=Value,
+                            UpdateSourceTrigger=PropertyChanged}"
+                                 Width="{StaticResource SunMockupWidth}"
+                                 Height="{StaticResource SunMockupHeight}"
+                                 Fill="#00DE0A0A"
+                                 Stroke="blue" 
+                                 StrokeDashArray="4,4"
+                                 SnapsToDevicePixels="True"
+                                 />
+                        <Ellipse x:Name="Sun" Width="{StaticResource SunMockupWidth}"
+                                 Height="{StaticResource SunMockupHeight}">
+                            <Ellipse.Fill>
+                                <RadialGradientBrush>
+                                    <GradientStop Color="#FFFBD263" Offset="0.337"/>
+                                    <GradientStop Color="White" Offset="1"/>
+                                </RadialGradientBrush>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                    </Canvas>
+
+                    <Grid Grid.Row="0" x:Name="Control_Grid">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="331*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="100*"/>
+                        </Grid.ColumnDefinitions>
+                        <GridSplitter Grid.Column="1" 
+                                      Style="{StaticResource VerticalGridSplitter}"/>
+                        <Grid x:Name="ControlPanel"
+                              Grid.Column="2">
+                            <Grid.Background>
+                                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                                    <GradientStop Color="#7F00206D"/>
+                                    <GradientStop Color="#7FFFFFFF" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Grid.Background>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="5"/>
+                                <RowDefinition Height="60"/>
+                                <RowDefinition Height="60"/>
+                                <RowDefinition Height="60"/>
+                                <RowDefinition Height="60"/>
+                                <RowDefinition Height="60"/>
+                                <RowDefinition Height="64*"/>
+                                <RowDefinition Height="40"/>
+                                <RowDefinition Height="7*"/>
+                            </Grid.RowDefinitions>
+
+                            <!--<StackPanel  Grid.Row="1"                            
+                                Style="{StaticResource SliderStack}">
+                                <TextBlock Text="Висота сонця в зеніті:"
+                                Style="{StaticResource ControllPanelTextBlock}"
+                                />
+                                <Slider x:Name="ZenitControl"                                        
+                                        Maximum="{Binding MaxZenitValue, Mode=OneWay, 
+                                    UpdateSourceTrigger=PropertyChanged}"
+                                        Minimum="0"
+                                        Value="{Binding BCoeficient, Mode=TwoWay,
+                                    UpdateSourceTrigger=PropertyChanged}"
+                                        />
+                                <Label Content="{Binding BCoeficient, Mode=OneWay,
+                                    UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>-->
+
+                            <!--<StackPanel Grid.Row="6"
+                                        Style="{StaticResource SliderStack}">
+                            <TextBlock Text="Шаг траекторії сонця:"
+                                   Style="{StaticResource ControllPanelTextBlock}"/>
+                                <Slider x:Name="PathStep"
+                                        Maximum="{Binding ElementName=Canvas, Path=ActualWidth,
+                                    Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Minimum="0.0001"                                        
+                                        Value="{Binding SunPathStep, Mode=TwoWay,
+                                    UpdateSourceTrigger=PropertyChanged}"
+                                        />
+                                <Label Content="{Binding SunPathStep, Mode=OneWay,
+                                    UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>-->
+
+                            <Grid Grid.Row="8" Margin="0,10,0,-6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="StartButton"
+                                    Grid.Column="1" Margin="10" Content="{Binding StartButtonTitle,
+                                    Mode=OneWay, 
+                                    UpdateSourceTrigger=PropertyChanged}"
+                                    FontSize="{StaticResource ControlPanelFontSize}" 
+                                        Click="StartButton_Click"
+                                        
+                                        >
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+
+                </Grid>
             </TabItem>
         </TabControl>
     </Grid>

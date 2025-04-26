@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 
 namespace SunRise_SunDown
 {
@@ -26,9 +27,7 @@ namespace SunRise_SunDown
         
         private double m_BCoeficient;
 
-        private double m_MaxZenitValue;
-
-        private double m_SunMockUpHeight;
+        private double m_MaxZenitValue;       
 
         private double m_SunPathStep;
         
@@ -40,8 +39,22 @@ namespace SunRise_SunDown
 
         private DoubleAnimationUsingPath m_animationY;
 
+        ColorAnimationUsingKeyFrames m_colorAnimationUsingKeyFrames;
+
         private bool m_AnimPlaying;
-        
+
+        private double m_AnimDuration;
+
+        private double m_sunWidth;
+
+        private double m_sunHeight;
+
+        private bool m_CntrlPanelEnabled;
+
+        RadialGradientBrush m_sunBrush;
+
+        ColorAnimationUsingKeyFrames m_SunGradStepAnimation;
+
         #endregion
 
         #region Properties
@@ -92,6 +105,30 @@ namespace SunRise_SunDown
             set=> Set(ref m_StartButtonTittle, value);
         }
 
+        public double AnimDuration 
+        {
+            get=> m_AnimDuration;
+            set=> Set(ref m_AnimDuration, value); 
+        }
+
+
+        public double SunWidth 
+        { 
+            get=> m_sunWidth;
+            set=> Set(ref m_sunWidth, value); 
+        }
+
+        public double SunHeight 
+        {
+            get=> m_sunHeight; 
+            set=> Set(ref m_sunHeight, value); 
+        }
+
+        public bool ControlPanelEnabled 
+        {
+            get=> m_CntrlPanelEnabled;
+            set=> Set(ref m_CntrlPanelEnabled, value);
+        }
         #endregion
 
         public MainWindow()
@@ -104,9 +141,7 @@ namespace SunRise_SunDown
                 "Схід сонця і захід сонця. Сонце повинне з'являтися в лівій нижній частині вікна, \n" +
                 "рухатися у вікні деяким радіусом і сідати в нижній правій частині вікна. \n" +
                 "У процесі руху воно має максимально правдоподібно змінювати колір та розмір\n";
-
-            m_SunMockUpHeight = (double)this.Resources["SunMockupHeight"];
-
+            
             m_SunPathStep = 0.01;
 
             m_StartClick = false;
@@ -114,6 +149,15 @@ namespace SunRise_SunDown
             m_StartButtonTittle = "Start";
 
             m_AnimPlaying = false;
+
+            m_sunHeight = 50;
+            m_sunWidth = 50;
+
+            m_CntrlPanelEnabled = true;
+
+            m_AnimDuration = 1;
+
+            SetupSunBackColor();
         }
 
         #region INotifyPropertyChanged
@@ -161,7 +205,7 @@ namespace SunRise_SunDown
             if (canvasActualHeight == 0)
                 return;
 
-            MaxZenitValue = canvasActualHeight - m_SunMockUpHeight;
+            MaxZenitValue = canvasActualHeight - m_sunHeight;
         }
 
         private IEnumerable<Point> CalculateEllipsePath(double start, double end)
@@ -223,6 +267,10 @@ namespace SunRise_SunDown
         {
             if (!m_AnimPlaying)
             {
+                ControlPanelEnabled = false;
+
+                this.Sun.Visibility = Visibility.Visible;
+
                 this.Sun.BeginAnimation(Canvas.LeftProperty, m_animationX);
                 this.Sun.BeginAnimation(Canvas.TopProperty, m_animationY);
 
@@ -230,6 +278,17 @@ namespace SunRise_SunDown
                 this.SunMock.Visibility = Visibility.Hidden;
                 m_AnimPlaying = true;
             }
+        }
+
+        private void SetupSunBackColor()
+        {
+            RadialGradientBrush m_sunBrush = new RadialGradientBrush();
+
+            m_sunBrush.GradientOrigin = new Point(0.5, 0.5);
+            m_sunBrush.GradientStops.Add(new GradientStop() { Color = Color.FromArgb(255, 251, 99, 99), Offset = 0.337 });
+            m_sunBrush.GradientStops.Add(new GradientStop() { Color = Color.FromArgb(0, 255, 255, 255), Offset = 1 });
+
+            this.Sun.Fill = m_sunBrush;
         }
 
         private void StopSunPathAnimation()
@@ -245,6 +304,45 @@ namespace SunRise_SunDown
                 this.PolyLineMock.Visibility = Visibility.Visible;
                 this.SunMock.Visibility = Visibility.Visible;
                 m_AnimPlaying = false;
+
+                ControlPanelEnabled = true;
+            }
+        }
+
+        private void SetupSunColorAnimation()
+        {
+            m_SunGradStepAnimation = new ColorAnimationUsingKeyFrames();
+            m_SunGradStepAnimation.Duration = TimeSpan.FromSeconds(AnimDuration);
+
+            m_SunGradStepAnimation.AutoReverse = false;
+            m_SunGradStepAnimation.RepeatBehavior = RepeatBehavior.Forever;
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime= KeyTime.FromPercent(0), Value = Color.FromArgb(255, 251, 99, 99) });
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime= KeyTime.FromPercent(0.1), Value = Color.FromArgb(255, 251, 123, 99) });
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime= KeyTime.FromPercent(0.15), Value = Color.FromArgb(255, 251, 160, 99) });
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.20), Value = Color.FromArgb(255, 251, 212, 99) });
+
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.30), Value = Color.FromArgb(255, 251, 240, 99) });
+
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.8), Value = Color.FromArgb(255, 251, 212, 99) });
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.85), Value = Color.FromArgb(255, 251, 160, 99) });
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.90), Value = Color.FromArgb(255, 251, 123, 99) });
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(1), Value = Color.FromArgb(255, 251, 99, 99) });                                   
+        }
+
+        private void StartSunColorAnimation()
+        {
+            if (!m_AnimPlaying)
+            {
+                m_sunBrush.GradientStops[0].BeginAnimation(GradientStop.ColorProperty, m_SunGradStepAnimation);
+            }
+        }
+
+        private void StopSunColorAnimation()
+        {
+            if (m_AnimPlaying)
+            {
+                m_SunGradStepAnimation.BeginTime = null;
+                m_sunBrush.GradientStops[0].BeginAnimation(GradientStop.ColorProperty, m_SunGradStepAnimation);
             }
         }
 
@@ -267,14 +365,14 @@ namespace SunRise_SunDown
             m_animationX = new DoubleAnimationUsingPath();
             m_animationX.PathGeometry = animationPath;
             m_animationX.Source = PathAnimationSource.X;
-            m_animationX.Duration = TimeSpan.FromSeconds(5);
+            m_animationX.Duration = TimeSpan.FromSeconds(AnimDuration);
             m_animationX.RepeatBehavior = RepeatBehavior.Forever;
             m_animationX.AutoReverse = false;
 
             m_animationY = new DoubleAnimationUsingPath();
             m_animationY.PathGeometry = animationPath;
             m_animationY.Source = PathAnimationSource.Y;
-            m_animationY.Duration = TimeSpan.FromSeconds(5);
+            m_animationY.Duration = TimeSpan.FromSeconds(AnimDuration);
             m_animationY.RepeatBehavior = RepeatBehavior.Forever;
             m_animationY.AutoReverse = false;
         }
@@ -285,7 +383,11 @@ namespace SunRise_SunDown
             {
                 SetupSunPathAnimation();
 
+                SetupSunColorAnimation();
+
                 StartSunPathAnimation();
+
+                StartSunColorAnimation();
             }
             else
             {
@@ -293,6 +395,8 @@ namespace SunRise_SunDown
                 m_StartClick = false;
 
                 StopSunPathAnimation();
+
+                StopSunColorAnimation();
             }
         }
     }

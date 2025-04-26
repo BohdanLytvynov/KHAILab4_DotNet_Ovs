@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SunRise_SunDown" 
         xmlns:system="clr-namespace:System;assembly=mscorlib"
+        xmlns:sliderExt="clr-namespace:SunRise_SunDown.ControllsExtensions"
         mc:Ignorable="d"
         Title="lab Work 4" Height="450" Width="800"               
         d:DataContext="{d:DesignInstance local:MainWindow, IsDesignTimeCreatable=True}">
@@ -13,13 +14,7 @@
 
         <Duration x:Key="AnimDuration">0:0:0:0.02
         </Duration>
-
-        <system:Double x:Key="SunMockupWidth">70
-        </system:Double>
-
-        <system:Double x:Key="SunMockupHeight">70
-        </system:Double>
-
+       
         <system:Double x:Key="ControlPanelFontSize">16
         </system:Double>
 
@@ -67,6 +62,7 @@
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="10,0,0,0"/>
                 <Setter Property="ItemsControl.FontSize" Value="{StaticResource ControlPanelFontSize}"/>
+                <Setter Property="ItemsControl.Foreground" Value="Black"/>
             </Style.Setters>
         </Style>
 
@@ -82,7 +78,22 @@
                 <Setter Property="ItemsControl.Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type Slider}">
-                            
+                            <StackPanel  Grid.Row="1"                            
+                                Style="{StaticResource SliderStack}">
+                                <TextBlock  Text="{Binding Path=(sliderExt:SliderExtensions.SliderName), 
+                                    RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                            Style="{StaticResource ControllPanelTextBlock}"
+                                />
+                                <Slider x:Name="Slider"                                        
+                                        Maximum="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Path=Maximum}"
+                                        Minimum="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Path=Minimum}"
+                                        Value="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Path=Value}"
+                                        IsEnabled="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Path=IsEnabled}"
+                                />
+                                <Label Content="{Binding ElementName=Slider, Path=Value,
+                                    Mode=OneWay,
+                                        UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
@@ -112,30 +123,32 @@
                                   >
                         </Polyline>
 
-
-
                         <Ellipse x:Name="SunMock"
                                  Canvas.Left="{Binding CentralLowPoint.X, 
                             Mode=OneWay, 
                             UpdateSourceTrigger=PropertyChanged}"
-                                 Canvas.Bottom="{Binding ElementName=ZenitControl,
+                                 Canvas.Bottom="{Binding ElementName=ZenitHeightSlider,
                             Path=Value,
                             UpdateSourceTrigger=PropertyChanged}"
-                                 Width="{StaticResource SunMockupWidth}"
-                                 Height="{StaticResource SunMockupHeight}"
+                                 Width="{Binding SunWidth, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="{Binding SunHeight, UpdateSourceTrigger=PropertyChanged}"
                                  Fill="#00DE0A0A"
                                  Stroke="blue" 
                                  StrokeDashArray="4,4"
                                  SnapsToDevicePixels="True"
+                                 Visibility="Visible"
                                  />
-                        <Ellipse x:Name="Sun" Width="{StaticResource SunMockupWidth}"
-                                 Height="{StaticResource SunMockupHeight}">
-                            <Ellipse.Fill>
+                        <Ellipse x:Name="Sun"
+                                 Width="{Binding SunWidth, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="{Binding SunHeight, UpdateSourceTrigger=PropertyChanged}"
+                                 Visibility="Visible"
+                                 >
+                            <!--<Ellipse.Fill>
                                 <RadialGradientBrush>
-                                    <GradientStop Color="#FFFBD263" Offset="0.337"/>
+                                    <GradientStop Color="#FFFBF063" Offset="0.339"/>
                                     <GradientStop Color="White" Offset="1"/>
                                 </RadialGradientBrush>
-                            </Ellipse.Fill>
+                            </Ellipse.Fill>-->                            
                         </Ellipse>
                     </Canvas>
 
@@ -163,42 +176,71 @@
                                 <RowDefinition Height="60"/>
                                 <RowDefinition Height="60"/>
                                 <RowDefinition Height="64*"/>
-                                <RowDefinition Height="40"/>
+                                <RowDefinition Height="50"/>
                                 <RowDefinition Height="7*"/>
                             </Grid.RowDefinitions>
 
-                            <!--<StackPanel  Grid.Row="1"                            
-                                Style="{StaticResource SliderStack}">
-                                <TextBlock Text="Висота сонця в зеніті:"
-                                Style="{StaticResource ControllPanelTextBlock}"
-                                />
-                                <Slider x:Name="ZenitControl"                                        
-                                        Maximum="{Binding MaxZenitValue, Mode=OneWay, 
-                                    UpdateSourceTrigger=PropertyChanged}"
-                                        Minimum="0"
-                                        Value="{Binding BCoeficient, Mode=TwoWay,
-                                    UpdateSourceTrigger=PropertyChanged}"
-                                        />
-                                <Label Content="{Binding BCoeficient, Mode=OneWay,
-                                    UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>-->
-
-                            <!--<StackPanel Grid.Row="6"
-                                        Style="{StaticResource SliderStack}">
-                            <TextBlock Text="Шаг траекторії сонця:"
-                                   Style="{StaticResource ControllPanelTextBlock}"/>
-                                <Slider x:Name="PathStep"
-                                        Maximum="{Binding ElementName=Canvas, Path=ActualWidth,
+                            <Slider Style="{StaticResource Slider}" Grid.Row="1"     
+                                    sliderExt:SliderExtensions.SliderName="Висота Сонця в Зеніті:"
+                                    x:Name="ZenitHeightSlider"
+                                    Minimum="0"
+                                    Maximum="{Binding MaxZenitValue,
                                     Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
-                                        Minimum="0.0001"                                        
-                                        Value="{Binding SunPathStep, Mode=TwoWay,
-                                    UpdateSourceTrigger=PropertyChanged}"
-                                        />
-                                <Label Content="{Binding SunPathStep, Mode=OneWay,
-                                    UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>-->
+                                    Value="{Binding BCoeficient
+                                , Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    IsEnabled="{Binding ControlPanelEnabled, UpdateSourceTrigger=PropertyChanged}"
+                            />
 
-                            <Grid Grid.Row="8" Margin="0,10,0,-6">
+                            <Slider Grid.Row="2"
+                                sliderExt:SliderExtensions.SliderName="Крок генерації шляху:"
+                                Style="{StaticResource Slider}" 
+                                Value="{Binding SunPathStep,
+                                UpdateSourceTrigger=PropertyChanged,
+                                Mode=TwoWay}"
+                                Minimum="0.01"
+                                Maximum="{Binding ElementName=Canvas, 
+                                Path=ActualWidth, UpdateSourceTrigger=PropertyChanged}"
+                                IsEnabled="{Binding ControlPanelEnabled, UpdateSourceTrigger=PropertyChanged}"
+                                />
+
+                            <Slider Grid.Row="3"
+                                sliderExt:SliderExtensions.SliderName="Тривалість Анімації(сек.):"
+                                Style="{StaticResource Slider}"
+                                Value="{Binding AnimDuration, 
+                                UpdateSourceTrigger=PropertyChanged,
+                                Mode=TwoWay}"
+                                Minimum="1"                                
+                                Maximum="60"
+                                IsEnabled="{Binding ControlPanelEnabled, UpdateSourceTrigger=PropertyChanged}"
+                                />
+
+                            <Slider Grid.Row="4"
+                                Style="{StaticResource Slider}"
+                                sliderExt:SliderExtensions.SliderName="Ширина сонячного диску"
+                                Value="{Binding SunWidth,
+                                UpdateSourceTrigger=PropertyChanged,
+                                Mode=TwoWay}"
+                                Minimum="50"
+                                Maximum="{Binding ElementName=Canvas, 
+                                Path=ActualWidth,
+                                UpdateSourceTrigger=PropertyChanged}"
+                                IsEnabled="{Binding ControlPanelEnabled, UpdateSourceTrigger=PropertyChanged}"
+                                />
+
+                            <Slider Grid.Row="5"
+                                Style="{StaticResource Slider}"
+                                sliderExt:SliderExtensions.SliderName="Висота сонячного диску"
+                                Value="{Binding SunHeight,
+                                UpdateSourceTrigger=PropertyChanged,
+                                Mode=TwoWay}"
+                                    Minimum="50"
+                                    Maximum="{Binding ElementName=Canvas,
+                                Path=ActualHeight,
+                                UpdateSourceTrigger=PropertyChanged}"
+                                IsEnabled="{Binding ControlPanelEnabled, UpdateSourceTrigger=PropertyChanged}"
+                                />
+                                                       
+                            <Grid Grid.Row="7">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="16"/>
                                     <ColumnDefinition Width="120"/>
@@ -209,8 +251,7 @@
                                     Mode=OneWay, 
                                     UpdateSourceTrigger=PropertyChanged}"
                                     FontSize="{StaticResource ControlPanelFontSize}" 
-                                        Click="StartButton_Click"
-                                        
+                                        Click="StartButton_Click"                                        
                                         >
                                 </Button>
                             </Grid>

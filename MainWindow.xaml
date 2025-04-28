@@ -14,7 +14,7 @@
 
         <Duration x:Key="AnimDuration">0:0:0:0.02
         </Duration>
-       
+
         <system:Double x:Key="ControlPanelFontSize">16
         </system:Double>
 
@@ -115,41 +115,75 @@
                 <Grid x:Name="Scene_Grid">
                     <Canvas x:Name="Canvas" Grid.Row="0" 
                             Initialized="Canvas_Initialized" 
-                            SizeChanged="Canvas_SizeChanged">
-                        <Polyline x:Name="PolyLineMock"                                  
-                                  Stroke="blue"
-                                  RenderTransformOrigin="0.5, 0.5"
-                                  StrokeDashArray="3,3"
-                                  >
-                        </Polyline>
+                            SizeChanged="Canvas_SizeChanged"                            
+                            >
+                        
+                        <Rectangle x:Name="Sky"
+                                   Canvas.Left="0"
+                                   Canvas.Bottom="100"
+                                   Height="{Binding SkyHeigth, UpdateSourceTrigger=PropertyChanged}"
+                                   Width="{Binding ElementName=Canvas, Path=ActualWidth,
+                            UpdateSourceTrigger=PropertyChanged}"
+                                   
+                                   >
+                            <Rectangle.Fill>
+                                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                                    <GradientStop Color="#FF6996DE"/>
+                                    <GradientStop Color="White" Offset="0.449"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+
+                        <Ellipse x:Name="Sun"
+         Width="{Binding SunWidth, UpdateSourceTrigger=PropertyChanged}"
+         Height="{Binding SunHeight, UpdateSourceTrigger=PropertyChanged}"
+         Visibility="Hidden"
+         Panel.ZIndex="1"         
+         />
+                        <Rectangle Canvas.Left="0" Canvas.Bottom="0" 
+           x:Name="Ground"           
+           Width="{Binding ElementName=Canvas, Path=ActualWidth, 
+    UpdateSourceTrigger=PropertyChanged}"
+           Height="{Binding GroundHeight, UpdateSourceTrigger=PropertyChanged}">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                                    <GradientStop Color="#FF924400"/>
+                                    <GradientStop Color="#FF170E05" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+
+                        <Polyline x:Name="PolyLineMock"
+          Stroke="blue"
+          Canvas.Left="0"
+          Canvas.Bottom="50"
+          StrokeDashArray="3,3"
+          />
 
                         <Ellipse x:Name="SunMock"
-                                 Canvas.Left="{Binding CentralLowPoint.X, 
-                            Mode=OneWay, 
-                            UpdateSourceTrigger=PropertyChanged}"
-                                 Canvas.Bottom="{Binding ElementName=ZenitHeightSlider,
-                            Path=Value,
-                            UpdateSourceTrigger=PropertyChanged}"
-                                 Width="{Binding SunWidth, UpdateSourceTrigger=PropertyChanged}"
-                                 Height="{Binding SunHeight, UpdateSourceTrigger=PropertyChanged}"
-                                 Fill="#00DE0A0A"
-                                 Stroke="blue" 
-                                 StrokeDashArray="4,4"
-                                 SnapsToDevicePixels="True"
-                                 Visibility="Visible"
-                                 />
-                        <Ellipse x:Name="Sun"
-                                 Width="{Binding SunWidth, UpdateSourceTrigger=PropertyChanged}"
-                                 Height="{Binding SunHeight, UpdateSourceTrigger=PropertyChanged}"
-                                 Visibility="Visible"
-                                 >
-                            <!--<Ellipse.Fill>
-                                <RadialGradientBrush>
-                                    <GradientStop Color="#FFFBF063" Offset="0.339"/>
-                                    <GradientStop Color="White" Offset="1"/>
-                                </RadialGradientBrush>
-                            </Ellipse.Fill>-->                            
-                        </Ellipse>
+         Canvas.Left="{Binding CentralLowPoint.X, 
+    Mode=OneWay, 
+    UpdateSourceTrigger=PropertyChanged}"
+         Canvas.Bottom="{Binding ElementName=ZenitHeightSlider,
+    Path=Value,
+    UpdateSourceTrigger=PropertyChanged}"
+         Width="{Binding SunWidth, UpdateSourceTrigger=PropertyChanged}"
+         Height="{Binding SunHeight, UpdateSourceTrigger=PropertyChanged}"
+         Fill="#00DE0A0A"
+         Stroke="blue" 
+         StrokeDashArray="4,4"
+         SnapsToDevicePixels="True"
+         Visibility="Visible"
+         />
+                        <Rectangle x:Name="mask"
+           Canvas.Top="0"
+           Canvas.Left="0"
+           Width="{Binding ElementName=Canvas, 
+    Path=ActualWidth, UpdateSourceTrigger=PropertyChanged}"
+           Height="{Binding ElementName=Canvas,
+    Path=ActualHeight, UpdateSourceTrigger=PropertyChanged}"
+           />
+
                     </Canvas>
 
                     <Grid Grid.Row="0" x:Name="Control_Grid">
@@ -239,7 +273,7 @@
                                 UpdateSourceTrigger=PropertyChanged}"
                                 IsEnabled="{Binding ControlPanelEnabled, UpdateSourceTrigger=PropertyChanged}"
                                 />
-                                                       
+
                             <Grid Grid.Row="7">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="16"/>

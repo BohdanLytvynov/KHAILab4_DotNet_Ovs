@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -11,6 +12,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace SunRise_SunDown
 {
@@ -24,13 +26,13 @@ namespace SunRise_SunDown
         private Vector m_currentSunPosition;
 
         private Vector m_CentralLowPoint;
-        
+
         private double m_BCoeficient;
 
-        private double m_MaxZenitValue;       
+        private double m_MaxZenitValue;
 
         private double m_SunPathStep;
-        
+
         private bool m_StartClick;
 
         private string m_StartButtonTittle;
@@ -39,7 +41,7 @@ namespace SunRise_SunDown
 
         private DoubleAnimationUsingPath m_animationY;
 
-        ColorAnimationUsingKeyFrames m_colorAnimationUsingKeyFrames;
+        private ColorAnimationUsingKeyFrames m_colorAnimationUsingKeyFrames;
 
         private bool m_AnimPlaying;
 
@@ -51,97 +53,122 @@ namespace SunRise_SunDown
 
         private bool m_CntrlPanelEnabled;
 
-        RadialGradientBrush m_sunBrush;
+        private RadialGradientBrush m_sunBrush;
 
-        ColorAnimationUsingKeyFrames m_SunGradStepAnimation;
+        private ColorAnimationUsingKeyFrames m_SunGradStepAnimation;
 
+        private bool m_SunSetUp;
+
+        private double m_groundHeight;
+
+        private double m_skyHeight;
+
+        private ColorAnimationUsingKeyFrames m_maskColor1Animation;
+
+        private ColorAnimationUsingKeyFrames m_maskColor2Animation;
+
+        private GradientBrush m_maskBrash;
+        
         #endregion
 
         #region Properties
 
-        public Vector CurrentSunPosition 
+        public Vector CurrentSunPosition
         {
-            get => m_currentSunPosition; 
-            set => Set(ref m_currentSunPosition, value); 
+            get => m_currentSunPosition;
+            set => Set(ref m_currentSunPosition, value);
         }
 
-        public Vector CentralLowPoint 
+        public Vector CentralLowPoint
         {
-            get=> m_CentralLowPoint; 
-            set=> Set(ref m_CentralLowPoint, value); 
+            get => m_CentralLowPoint;
+            set => Set(ref m_CentralLowPoint, value);
         }
 
         public double BCoeficient
         {
             get => m_BCoeficient;
-            set 
-            { 
+            set
+            {
                 Set(ref m_BCoeficient, value);
 
                 GenerateSunPath();
             }
         }
 
-        public double MaxZenitValue 
+        public double MaxZenitValue
         {
-            get=>m_MaxZenitValue; 
-            set=>Set(ref m_MaxZenitValue, value);
+            get => m_MaxZenitValue;
+            set => Set(ref m_MaxZenitValue, value);
         }
 
-        public double SunPathStep 
+        public double SunPathStep
         {
-            get=> m_SunPathStep;
-            set 
+            get => m_SunPathStep;
+            set
             {
-                Set(ref m_SunPathStep, value); 
+                Set(ref m_SunPathStep, value);
 
                 GenerateSunPath();
             }
         }
 
-        public string StartButtonTitle 
+        public string StartButtonTitle
         {
-            get=> m_StartButtonTittle; 
-            set=> Set(ref m_StartButtonTittle, value);
+            get => m_StartButtonTittle;
+            set => Set(ref m_StartButtonTittle, value);
         }
 
-        public double AnimDuration 
+        public double AnimDuration
         {
-            get=> m_AnimDuration;
-            set=> Set(ref m_AnimDuration, value); 
+            get => m_AnimDuration;
+            set => Set(ref m_AnimDuration, value);
         }
 
 
-        public double SunWidth 
-        { 
-            get=> m_sunWidth;
-            set=> Set(ref m_sunWidth, value); 
-        }
-
-        public double SunHeight 
+        public double SunWidth
         {
-            get=> m_sunHeight; 
-            set=> Set(ref m_sunHeight, value); 
+            get => m_sunWidth;
+            set => Set(ref m_sunWidth, value);
         }
 
-        public bool ControlPanelEnabled 
+        public double SunHeight
         {
-            get=> m_CntrlPanelEnabled;
-            set=> Set(ref m_CntrlPanelEnabled, value);
+            get => m_sunHeight;
+            set => Set(ref m_sunHeight, value);
         }
+
+        public bool ControlPanelEnabled
+        {
+            get => m_CntrlPanelEnabled;
+            set => Set(ref m_CntrlPanelEnabled, value);
+        }
+
+        public double GroundHeight
+        {
+            get => m_groundHeight;
+            set => Set(ref m_groundHeight, value);
+        }
+
+        public double SkyHeigth
+        {
+            get => m_skyHeight;
+            set => Set(ref m_skyHeight, value);
+        }
+        
         #endregion
 
         public MainWindow()
         {
             InitializeComponent();
-            
+
             this.DataContext = this;
 
-            this.Task_Desc.Text = "Варіант номер 9, Литвинов Б Ю 125 гр\n" + 
+            this.Task_Desc.Text = "Варіант номер 9, Литвинов Б Ю 125 гр\n" +
                 "Схід сонця і захід сонця. Сонце повинне з'являтися в лівій нижній частині вікна, \n" +
                 "рухатися у вікні деяким радіусом і сідати в нижній правій частині вікна. \n" +
                 "У процесі руху воно має максимально правдоподібно змінювати колір та розмір\n";
-            
+
             m_SunPathStep = 0.01;
 
             m_StartClick = false;
@@ -157,7 +184,11 @@ namespace SunRise_SunDown
 
             m_AnimDuration = 1;
 
+            m_groundHeight = 100;
+
             SetupSunBackColor();
+
+            SetupMaskBackColor();
         }
 
         #region INotifyPropertyChanged
@@ -170,7 +201,7 @@ namespace SunRise_SunDown
             temp?.Invoke(this, new PropertyChangedEventArgs(propName));
         }
 
-        private bool Set<T>(ref T field, T value, [CallerMemberName] string propName= "")
+        private bool Set<T>(ref T field, T value, [CallerMemberName] string propName = "")
         {
             if (field == null)
             {
@@ -192,9 +223,9 @@ namespace SunRise_SunDown
         }
 
         #endregion
- 
+
         #region Private Helper Methods
-        
+
         private void CalculateCentralPoint(double actualWidth)
         {
             CentralLowPoint = new Vector(actualWidth / 2, 0);
@@ -212,17 +243,19 @@ namespace SunRise_SunDown
         {
             double current = start;
 
-            while (current < end)
+            double a_coeficient = CentralLowPoint.X;
+
+            double x = 0;
+
+            while (current <= end)
             {
-                double x = 0;
+                x = current - a_coeficient;
 
-                x = current - CentralLowPoint.X;
+                double y = Math.Sqrt(Math.Pow(BCoeficient, 2) - Math.Pow((BCoeficient / a_coeficient), 2) * Math.Pow(x, 2));
 
-                double y = Math.Sqrt(Math.Pow(BCoeficient, 2) - Math.Pow((BCoeficient/CentralLowPoint.X), 2) * Math.Pow(x, 2));
-                
                 yield return new Point(current, MaxZenitValue - y);
 
-                current+= SunPathStep;
+                current += SunPathStep;
             }
         }
 
@@ -233,8 +266,14 @@ namespace SunRise_SunDown
 
             foreach (var p in CalculateEllipsePath(0, this.ActualWidth))
             {
-                this.PolyLineMock.Points.Add(p);
+                if (!double.IsNaN(p.Y))
+                    this.PolyLineMock.Points.Add(p);
             }
+        }
+
+        private void CalculateSkyHeight(double canvasHeight)
+        {
+            SkyHeigth = canvasHeight - GroundHeight;
         }
 
         #endregion
@@ -247,19 +286,23 @@ namespace SunRise_SunDown
                 throw new Exception("Fail to get Canvas! <Canvas_Initialized>");
 
             CalculateMaxZenitValue(canvas.ActualHeight);
+
+            CalculateSkyHeight(canvas.ActualHeight);
         }
 
         private void Canvas_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            CalculateCentralPoint(this.ActualWidth);
-
             Canvas canvas = sender as Canvas;
 
             if (canvas == null)
                 throw new Exception("Fail to get Canvas! <Canvas_SizeChanged>");
 
+            CalculateCentralPoint(canvas.ActualWidth);
+
             CalculateMaxZenitValue(canvas.ActualHeight);
-            
+
+            CalculateSkyHeight(canvas.ActualHeight);
+
             BCoeficient += 0.000000000000001;
         }
 
@@ -270,25 +313,53 @@ namespace SunRise_SunDown
                 ControlPanelEnabled = false;
 
                 this.Sun.Visibility = Visibility.Visible;
+                
+                this.PolyLineMock.Visibility = Visibility.Hidden;
+                this.SunMock.Visibility = Visibility.Hidden;
+
+                //AnimationClock animationClock = m_animationY.CreateClock();
+
+                //this.Sun.ApplyAnimationClock(Canvas.TopProperty, animationClock);
+
+                //DispatcherTimer  timer = new DispatcherTimer();
+                //timer.Interval = TimeSpan.FromMilliseconds(1);
+
+                //timer.Tick += (s, args) =>
+                //{
+                //    var currentValue = animationClock.GetCurrentValue(0,0);
+
+                //    Debug.WriteLine($"Value: {currentValue}");
+
+                //    if (animationClock.CurrentState == ClockState.Stopped)
+                //    {
+                //        timer.Stop();
+                //        this.Sun.ApplyAnimationClock(Canvas.TopProperty, null); // Detach the clock
+                //    }
+                //};
+
+                //timer.Start();
 
                 this.Sun.BeginAnimation(Canvas.LeftProperty, m_animationX);
                 this.Sun.BeginAnimation(Canvas.TopProperty, m_animationY);
 
-                this.PolyLineMock.Visibility = Visibility.Hidden;
-                this.SunMock.Visibility = Visibility.Hidden;
                 m_AnimPlaying = true;
             }
         }
 
         private void SetupSunBackColor()
         {
-            RadialGradientBrush m_sunBrush = new RadialGradientBrush();
+            if (!m_SunSetUp)
+            {
+                m_sunBrush = new RadialGradientBrush();
 
-            m_sunBrush.GradientOrigin = new Point(0.5, 0.5);
-            m_sunBrush.GradientStops.Add(new GradientStop() { Color = Color.FromArgb(255, 251, 99, 99), Offset = 0.337 });
-            m_sunBrush.GradientStops.Add(new GradientStop() { Color = Color.FromArgb(0, 255, 255, 255), Offset = 1 });
+                m_sunBrush.GradientOrigin = new Point(0.5, 0.5);
+                m_sunBrush.GradientStops.Add(new GradientStop() { Color = Color.FromArgb(255, 251, 99, 99), Offset = 0.337 });
+                m_sunBrush.GradientStops.Add(new GradientStop() { Color = Color.FromArgb(0, 255, 255, 255), Offset = 1 });
 
-            this.Sun.Fill = m_sunBrush;
+                this.Sun.Fill = m_sunBrush;
+
+                m_SunSetUp = true;
+            }
         }
 
         private void StopSunPathAnimation()
@@ -316,9 +387,9 @@ namespace SunRise_SunDown
 
             m_SunGradStepAnimation.AutoReverse = false;
             m_SunGradStepAnimation.RepeatBehavior = RepeatBehavior.Forever;
-            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime= KeyTime.FromPercent(0), Value = Color.FromArgb(255, 251, 99, 99) });
-            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime= KeyTime.FromPercent(0.1), Value = Color.FromArgb(255, 251, 123, 99) });
-            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime= KeyTime.FromPercent(0.15), Value = Color.FromArgb(255, 251, 160, 99) });
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0), Value = Color.FromArgb(255, 251, 99, 99) });
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.1), Value = Color.FromArgb(255, 251, 123, 99) });
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.15), Value = Color.FromArgb(255, 251, 160, 99) });
             m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.20), Value = Color.FromArgb(255, 251, 212, 99) });
 
             m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.30), Value = Color.FromArgb(255, 251, 240, 99) });
@@ -326,24 +397,18 @@ namespace SunRise_SunDown
             m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.8), Value = Color.FromArgb(255, 251, 212, 99) });
             m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.85), Value = Color.FromArgb(255, 251, 160, 99) });
             m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.90), Value = Color.FromArgb(255, 251, 123, 99) });
-            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(1), Value = Color.FromArgb(255, 251, 99, 99) });                                   
+            m_SunGradStepAnimation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(1), Value = Color.FromArgb(255, 251, 99, 99) });
         }
 
         private void StartSunColorAnimation()
         {
-            if (!m_AnimPlaying)
-            {
-                m_sunBrush.GradientStops[0].BeginAnimation(GradientStop.ColorProperty, m_SunGradStepAnimation);
-            }
+            m_sunBrush.GradientStops[0].BeginAnimation(GradientStop.ColorProperty, m_SunGradStepAnimation);
         }
 
         private void StopSunColorAnimation()
         {
-            if (m_AnimPlaying)
-            {
-                m_SunGradStepAnimation.BeginTime = null;
-                m_sunBrush.GradientStops[0].BeginAnimation(GradientStop.ColorProperty, m_SunGradStepAnimation);
-            }
+            m_SunGradStepAnimation.BeginTime = null;
+            m_sunBrush.GradientStops[0].BeginAnimation(GradientStop.ColorProperty, m_SunGradStepAnimation);
         }
 
         private void SetupSunPathAnimation()
@@ -358,7 +423,7 @@ namespace SunRise_SunDown
             pathFigure.StartPoint = points[0];
 
             PolyLineSegment polyLineSegment = new PolyLineSegment(points, false);
-            
+
             pathFigure.Segments.Add(polyLineSegment);
             animationPath.Figures.Add(pathFigure);
 
@@ -375,6 +440,76 @@ namespace SunRise_SunDown
             m_animationY.Duration = TimeSpan.FromSeconds(AnimDuration);
             m_animationY.RepeatBehavior = RepeatBehavior.Forever;
             m_animationY.AutoReverse = false;
+
+
+        }
+
+        private void SetupMaskBackColor()
+        {
+            m_maskBrash = new LinearGradientBrush();
+            m_maskBrash.SetValue(LinearGradientBrush.StartPointProperty, new Point(0.5, 0));
+            m_maskBrash.SetValue(LinearGradientBrush.EndPointProperty, new Point(0.5, 1));
+            m_maskBrash.GradientStops.Add(new GradientStop() { Color = Color.FromArgb(0,0,0,0), Offset=0 });
+            m_maskBrash.GradientStops.Add(new GradientStop() { Color = Color.FromArgb(0, 0, 0, 0), Offset=1 });
+
+            this.mask.Fill = m_maskBrash;
+        }
+
+        private void SetupColorMaskAnimation()
+        {
+            m_maskColor1Animation = new ColorAnimationUsingKeyFrames();
+            m_maskColor2Animation = new ColorAnimationUsingKeyFrames();
+
+            m_maskColor1Animation.Duration = TimeSpan.FromSeconds(AnimDuration);
+            m_maskColor2Animation.Duration = TimeSpan.FromSeconds(AnimDuration);
+
+            m_maskColor1Animation.AutoReverse = false;
+            m_maskColor2Animation.AutoReverse = false;
+
+            m_maskColor1Animation.RepeatBehavior = RepeatBehavior.Forever;
+            m_maskColor2Animation.RepeatBehavior = RepeatBehavior.Forever;
+
+            
+            //Start -> night
+            m_maskColor1Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0), Value = Color.FromArgb(255, 5, 8, 51) });
+            m_maskColor2Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0), Value = Color.FromArgb(228, 10, 14, 66) });
+            //Dawn -> 
+            m_maskColor1Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.1), Value = Color.FromArgb(255, 45, 49, 111) });
+            m_maskColor2Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.1), Value = Color.FromArgb(217, 27, 0, 31) });
+
+            m_maskColor1Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.15), Value = Color.FromArgb(255, 145, 151, 239) });
+            m_maskColor2Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.15), Value = Color.FromArgb(217, 15, 0, 31) });
+            
+            m_maskColor2Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.20), Value = Color.FromArgb(153, 15, 0, 31) });
+
+            m_maskColor2Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.30), Value = Color.FromArgb(0, 15, 0, 31) });
+
+            m_maskColor2Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.8), Value = Color.FromArgb(153, 15, 0, 31) });
+
+            m_maskColor2Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.85), Value = Color.FromArgb(217, 15, 0, 31) });
+            m_maskColor1Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.85), Value = Color.FromArgb(255, 145, 151, 239) });
+
+            m_maskColor1Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.9), Value = Color.FromArgb(255, 45, 49, 111) });
+            m_maskColor2Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(0.9), Value = Color.FromArgb(217, 27, 0, 31) });
+
+            m_maskColor1Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(1), Value = Color.FromArgb(255, 5, 8, 51) });
+            m_maskColor2Animation.KeyFrames.Add(new LinearColorKeyFrame() { KeyTime = KeyTime.FromPercent(1), Value = Color.FromArgb(228, 10, 14, 66) });
+        }
+
+
+        private void StartMaskAnimation()
+        {
+            m_maskBrash.GradientStops[0].BeginAnimation(GradientStop.ColorProperty, m_maskColor1Animation);
+            m_maskBrash.GradientStops[1].BeginAnimation(GradientStop.ColorProperty, m_maskColor2Animation);
+        }
+
+        private void StopMaskAnimation()
+        {
+            m_maskColor1Animation.BeginTime = null;
+            m_maskColor2Animation.BeginTime = null;
+
+            m_maskBrash.GradientStops[0].BeginAnimation(GradientStop.ColorProperty, m_maskColor1Animation);
+            m_maskBrash.GradientStops[1].BeginAnimation(GradientStop.ColorProperty, m_maskColor2Animation);
         }
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
@@ -385,9 +520,13 @@ namespace SunRise_SunDown
 
                 SetupSunColorAnimation();
 
+                SetupColorMaskAnimation();
+
                 StartSunPathAnimation();
 
                 StartSunColorAnimation();
+
+                StartMaskAnimation();
             }
             else
             {
@@ -397,6 +536,8 @@ namespace SunRise_SunDown
                 StopSunPathAnimation();
 
                 StopSunColorAnimation();
+
+                StopMaskAnimation();
             }
         }
     }

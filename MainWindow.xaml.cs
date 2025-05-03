@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SunRise_SunDown.Helpers;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -68,7 +69,9 @@ namespace SunRise_SunDown
         private ColorAnimationUsingKeyFrames m_maskColor2Animation;
 
         private GradientBrush m_maskBrash;
-        
+
+        private Int32AnimationUsingKeyFrames m_ZIndexAnimation;
+
         #endregion
 
         #region Properties
@@ -317,35 +320,13 @@ namespace SunRise_SunDown
                 this.PolyLineMock.Visibility = Visibility.Hidden;
                 this.SunMock.Visibility = Visibility.Hidden;
 
-                //AnimationClock animationClock = m_animationY.CreateClock();
-
-                //this.Sun.ApplyAnimationClock(Canvas.TopProperty, animationClock);
-
-                //DispatcherTimer  timer = new DispatcherTimer();
-                //timer.Interval = TimeSpan.FromMilliseconds(1);
-
-                //timer.Tick += (s, args) =>
-                //{
-                //    var currentValue = animationClock.GetCurrentValue(0,0);
-
-                //    Debug.WriteLine($"Value: {currentValue}");
-
-                //    if (animationClock.CurrentState == ClockState.Stopped)
-                //    {
-                //        timer.Stop();
-                //        this.Sun.ApplyAnimationClock(Canvas.TopProperty, null); // Detach the clock
-                //    }
-                //};
-
-                //timer.Start();
-
                 this.Sun.BeginAnimation(Canvas.LeftProperty, m_animationX);
                 this.Sun.BeginAnimation(Canvas.TopProperty, m_animationY);
 
                 m_AnimPlaying = true;
             }
         }
-
+        
         private void SetupSunBackColor()
         {
             if (!m_SunSetUp)
@@ -440,10 +421,8 @@ namespace SunRise_SunDown
             m_animationY.Duration = TimeSpan.FromSeconds(AnimDuration);
             m_animationY.RepeatBehavior = RepeatBehavior.Forever;
             m_animationY.AutoReverse = false;
-
-
         }
-
+        
         private void SetupMaskBackColor()
         {
             m_maskBrash = new LinearGradientBrush();
@@ -453,6 +432,30 @@ namespace SunRise_SunDown
             m_maskBrash.GradientStops.Add(new GradientStop() { Color = Color.FromArgb(0, 0, 0, 0), Offset=1 });
 
             this.mask.Fill = m_maskBrash;
+        }
+
+        private void SetupZIndexAnimation()
+        {
+            m_ZIndexAnimation = new Int32AnimationUsingKeyFrames();
+
+            m_ZIndexAnimation.RepeatBehavior = RepeatBehavior.Forever;
+            m_ZIndexAnimation.Duration = TimeSpan.FromSeconds(AnimDuration);
+
+            m_ZIndexAnimation.AutoReverse = false;
+            m_ZIndexAnimation.KeyFrames.Add(new DiscreteInt32KeyFrame() 
+            { KeyTime = KeyTime.FromPercent(0.09), Value = 1 });
+
+        }
+
+        private void StartZIndexAnimation()
+        {
+            this.Sun.BeginAnimation(Panel.ZIndexProperty, m_ZIndexAnimation);
+        }
+
+        private void StopZIndexAnimation()
+        {
+            this.Sun.BeginAnimation(Panel.ZIndexProperty, null);
+            Panel.SetZIndex(this.Sun, 0);
         }
 
         private void SetupColorMaskAnimation()
@@ -522,11 +525,15 @@ namespace SunRise_SunDown
 
                 SetupColorMaskAnimation();
 
+                SetupZIndexAnimation();
+
                 StartSunPathAnimation();
 
                 StartSunColorAnimation();
 
                 StartMaskAnimation();
+
+                StartZIndexAnimation();
             }
             else
             {
@@ -538,6 +545,8 @@ namespace SunRise_SunDown
                 StopSunColorAnimation();
 
                 StopMaskAnimation();
+
+                StopZIndexAnimation();
             }
         }
     }
